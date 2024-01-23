@@ -24,6 +24,7 @@ const path_1 = __importDefault(require("path"));
 const utils_1 = __importDefault(require("./utils"));
 const constants_1 = require("./constants");
 const plugins_1 = __importDefault(require("./plugins"));
+require("./promisify");
 const languagesPath = path_1.default.join(__dirname, '../build/public/language');
 const files = fs_1.default.readdirSync(path_1.default.join(constants_1.paths.nodeModules, '/timeago/locales'));
 exports.timeagoCodes = files.filter(f => f.startsWith('jquery.timeago')).map(f => f.split('.')[2]);
@@ -33,7 +34,7 @@ const get = (language, namespace) => __awaiter(void 0, void 0, void 0, function*
         throw new Error('[[error:invalid-path]]');
     }
     const data = yield fs_1.default.promises.readFile(pathToLanguageFile, 'utf8');
-    const parsed = JSON.parse(data) || {};
+    const parsed = JSON.parse(data);
     const result = yield plugins_1.default.hooks.fire('filter:languages.get', {
         language,
         namespace,
@@ -97,7 +98,7 @@ const userTimeagoCode = (userLang) => __awaiter(void 0, void 0, void 0, function
     return '';
 });
 exports.userTimeagoCode = userTimeagoCode;
-require("./promisify");
+// import './promisify';
 // const languagesPath = path.join
 // const Languages = module.exports;
 // const languagesPath = path.join(__dirname, '../build/public/language');

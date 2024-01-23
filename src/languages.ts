@@ -10,6 +10,8 @@ import path from 'path';
 import utils from './utils';
 import { paths } from './constants';
 import plugins from './plugins';
+import './promisify';
+
 
 interface Language {
     code: string;
@@ -18,7 +20,7 @@ interface Language {
 }
 
 interface LanguageData {
-    [key: string]: any;
+    [key: string]: string | number | boolean | object;
 }
 
 interface LanguageMetadata {
@@ -27,6 +29,14 @@ interface LanguageMetadata {
 
 interface NodeError extends Error {
     code?: string;
+}
+
+// interface PluginsHooks {
+//     fire(event: string, data: any): Promise<string>;
+// }
+
+interface ResultType {
+    data: LanguageData;
 }
 
 const languagesPath = path.join(__dirname, '../build/public/language');
@@ -40,12 +50,12 @@ export const get = async (language: string, namespace: string): Promise<Language
         throw new Error('[[error:invalid-path]]');
     }
     const data = await fs.promises.readFile(pathToLanguageFile, 'utf8');
-    const parsed: LanguageData = JSON.parse(data) || {};
-    const result = await plugins.hooks.fire('filter:languages.get', {
+    const parsed: LanguageData = JSON.parse(data) as LanguageData;
+    const result: ResultType = await plugins.hooks.fire('filter:languages.get', {
         language,
         namespace,
         data: parsed,
-    });
+    }) as ResultType;
     return result.data;
 };
 
@@ -56,7 +66,7 @@ export const listCodes = async (): Promise<string[]> => {
     }
     try {
         const file = await fs.promises.readFile(path.join(languagesPath, 'metadata.json'), 'utf8');
-        const parsed: LanguageMetadata = JSON.parse(file);
+        const parsed = JSON.parse(file) as LanguageMetadata;
 
         codeCache = parsed.languages;
         return parsed.languages;
@@ -81,7 +91,7 @@ export const list = async (): Promise<Language[]> => {
         try {
             const configPath = path.join(languagesPath, folder, 'language.json');
             const file = await fs.promises.readFile(configPath, 'utf8');
-            const lang: Language = JSON.parse(file);
+            const lang = JSON.parse(file) as Language;
             return lang;
         } catch (err) {
             const nodeError = err as NodeError;
@@ -100,14 +110,14 @@ export const list = async (): Promise<Language[]> => {
 
 export const userTimeagoCode = async (userLang: string): Promise<string> => {
     const languageCodes = await listCodes();
-    const timeagoCode = utils.userLangToTimeagoCode(userLang);
+    const timeagoCode = utils.userLangToTimeagoCode(userLang) as string;
     if (languageCodes.includes(userLang) && timeagoCodes.includes(timeagoCode)) {
         return timeagoCode;
     }
     return '';
 };
 
-import './promisify';
+// import './promisify';
 
 // const languagesPath = path.join
 // const Languages = module.exports;
