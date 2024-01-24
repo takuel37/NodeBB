@@ -99,7 +99,7 @@ const Assert = {
     })),
     folderName: helpers.try((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b;
-        const body = req.body;
+        const { body } = req;
         const folderName = slugify(path.basename((_b = (_a = body.folderName) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : ''));
         if (!folderName) {
             return controllerHelpers.formatApiResponse(403, res, new Error('[[error:invalid-path]]'));

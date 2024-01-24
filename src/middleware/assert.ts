@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as nconf from 'nconf';
+import { Response } from 'express'; // Import Response
 import * as file from '../file';
 import * as user from '../user';
 import * as groups from '../groups';
@@ -11,9 +12,10 @@ import * as slugify from '../slugify';
 import * as helpers from './helpers';
 import * as controllerHelpers from '../controllers/helpers';
 
+
 interface CustomRequest {
     params: { [key: string]: string }; // Adjust the type according to your usage
-    body: string;
+    body: CustomRequestBody; // Define the type for req.body
     uid?: string;
 }
 
@@ -100,8 +102,8 @@ const Assert = {
         next();
     }),
 
-    folderName: helpers.try(async (req: Request, res: CustomResponse, next: NextFunction) => {
-        const body = req.body as CustomRequestBody;
+    folderName: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
+        const { body } = req;
         const folderName = slugify(path.basename(body.folderName?.trim() ?? '')) as string;
 
         if (!folderName) {
