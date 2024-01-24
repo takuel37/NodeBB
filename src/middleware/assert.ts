@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as nconf from 'nconf';
+import { NextFunction } from 'express';
 import * as file from '../file';
 import * as user from '../user';
 import * as groups from '../groups';
@@ -11,7 +12,6 @@ import * as slugify from '../slugify';
 import * as helpers from './helpers';
 import * as controllerHelpers from '../controllers/helpers';
 
-
 interface CustomRequest {
     params: { [key: string]: string};
     body: CustomRequestBody;
@@ -20,6 +20,7 @@ interface CustomRequest {
 
 interface CustomRequestBody {
     folderName?: string;
+    path?: string;
 }
 
 interface CustomResponse {
@@ -31,7 +32,7 @@ interface CustomResponse {
     json: (body: string) => void;
 }
 
-type NextFunction = () => void;
+// type NextFunction = (error?: unknown) => void;
 
 const Assert = {
     user: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
@@ -60,14 +61,10 @@ const Assert = {
         if (!await posts.exists(req.params.pid)) {
             return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-post]]'));
         }
-
         next();
     }),
 
     flag: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
-        if (!req.uid) {
-            return controllerHelpers.formatApiResponse(400, res, new Error('User ID is missing'));
-        }
         const canView = await flags.canView(req.params.flagId, req.uid) as boolean;
 
         if (!canView) {
@@ -78,15 +75,20 @@ const Assert = {
     }),
 
     path: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
-        const body = req.body as { path?: string };
-        const uploadUrl = nconf.get('upload_url') as string;
-        const uploadPath = nconf.get('upload_path') as string;
+        let filePath = req.body.path;
 
-        if (body.path && uploadUrl && body.path.startsWith(uploadUrl)) {
-            body.path = body.path.slice(uploadUrl.length);
+        // file: URL support
+        if (filePath.startsWith('file:///')) {
+            filePath = new URL(filePath).pathname;
         }
 
-        const pathToFile = path.join(uploadPath, body.path || '');
+        const uploadUrl = nconf.get('upload_url') as string;
+        if (filePath.startsWith(uploadUrl)) {
+            filePath = filePath.slice(uploadUrl.length);
+        }
+
+        const uploadPath = nconf.get('upload_path') as string;
+        const pathToFile = path.join(uploadPath, filePath);
         res.locals.cleanedPath = pathToFile;
 
         if (!pathToFile.startsWith(uploadPath)) {
@@ -160,5 +162,6 @@ const Assert = {
         next();
     }),
 };
+export = Assert;
 
-export default Assert;
+// export default Assert;

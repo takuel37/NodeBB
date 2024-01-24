@@ -31,7 +31,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
 const nconf = __importStar(require("nconf"));
 const file = __importStar(require("../file"));
@@ -44,6 +43,7 @@ const flags = __importStar(require("../flags"));
 const slugify = __importStar(require("../slugify"));
 const helpers = __importStar(require("./helpers"));
 const controllerHelpers = __importStar(require("../controllers/helpers"));
+// type NextFunction = (error?: unknown) => void;
 const Assert = {
     user: helpers.try((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         if (!(yield user.exists(req.params.uid))) {
@@ -71,9 +71,6 @@ const Assert = {
         next();
     })),
     flag: helpers.try((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-        if (!req.uid) {
-            return controllerHelpers.formatApiResponse(400, res, new Error('User ID is missing'));
-        }
         const canView = yield flags.canView(req.params.flagId, req.uid);
         if (!canView) {
             return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-flag]]'));
@@ -81,13 +78,17 @@ const Assert = {
         next();
     })),
     path: helpers.try((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-        const body = req.body;
-        const uploadUrl = nconf.get('upload_url');
-        const uploadPath = nconf.get('upload_path');
-        if (body.path && uploadUrl && body.path.startsWith(uploadUrl)) {
-            body.path = body.path.slice(uploadUrl.length);
+        let filePath = req.body.path;
+        // file: URL support
+        if (filePath.startsWith('file:///')) {
+            filePath = new URL(filePath).pathname;
         }
-        const pathToFile = path.join(uploadPath, body.path || '');
+        const uploadUrl = nconf.get('upload_url');
+        if (filePath.startsWith(uploadUrl)) {
+            filePath = filePath.slice(uploadUrl.length);
+        }
+        const uploadPath = nconf.get('upload_path');
+        const pathToFile = path.join(uploadPath, filePath);
         res.locals.cleanedPath = pathToFile;
         if (!pathToFile.startsWith(uploadPath)) {
             return controllerHelpers.formatApiResponse(403, res, new Error('[[error:invalid-path]]'));
@@ -143,4 +144,5 @@ const Assert = {
         next();
     })),
 };
-exports.default = Assert;
+module.exports = Assert;
+// export default Assert;
