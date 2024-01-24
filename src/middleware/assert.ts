@@ -1,6 +1,5 @@
 import * as path from 'path';
 import * as nconf from 'nconf';
-import { Response } from 'express'; // Import Response
 import * as file from '../file';
 import * as user from '../user';
 import * as groups from '../groups';
@@ -14,8 +13,8 @@ import * as controllerHelpers from '../controllers/helpers';
 
 
 interface CustomRequest {
-    params: { [key: string]: string }; // Adjust the type according to your usage
-    body: CustomRequestBody; // Define the type for req.body
+    params: { [key: string]: string};
+    body: CustomRequestBody;
     uid?: string;
 }
 
@@ -35,14 +34,14 @@ interface CustomResponse {
 type NextFunction = () => void;
 
 const Assert = {
-    user: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
+    user: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
         if (!await user.exists(req.params.uid)) {
             return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-user]]'));
         }
         next();
     }),
 
-    group: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
+    group: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
         const name = await groups.getGroupNameByGroupSlug(req.params.slug) as string | null;
         if (!name || !await groups.exists(name)) {
             return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-group]]'));
@@ -50,15 +49,14 @@ const Assert = {
         next();
     }),
 
-    topic: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
+    topic: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
         if (!await topics.exists(req.params.tid)) {
             return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-topic]]'));
         }
-
         next();
     }),
 
-    post: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
+    post: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
         if (!await posts.exists(req.params.pid)) {
             return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-post]]'));
         }
@@ -66,7 +64,7 @@ const Assert = {
         next();
     }),
 
-    flag: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
+    flag: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
         if (!req.uid) {
             return controllerHelpers.formatApiResponse(400, res, new Error('User ID is missing'));
         }
@@ -125,7 +123,7 @@ const Assert = {
         next();
     }),
 
-    room: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
+    room: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
         const roomId = parseInt(req.params.roomId, 10);
 
         if (!isFinite(roomId)) {
@@ -150,7 +148,7 @@ const Assert = {
         next();
     }),
 
-    message: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
+    message: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
         const messageId = parseInt(req.params.mid, 10);
 
         if (!isFinite(messageId) ||
