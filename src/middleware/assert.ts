@@ -15,7 +15,6 @@ interface CustomRequest {
     params: { [key: string]: string }; // Adjust the type according to your usage
     body: string;
     uid?: string;
-    // Add other properties from Express's Request object as needed
 }
 
 interface CustomRequestBody {
