@@ -1,6 +1,5 @@
 import * as path from 'path';
 import * as nconf from 'nconf';
-import { Request, Response, NextFunction } from 'express';
 import * as file from '../file';
 import * as user from '../user';
 import * as groups from '../groups';
@@ -12,23 +11,30 @@ import * as slugify from '../slugify';
 import * as helpers from './helpers';
 import * as controllerHelpers from '../controllers/helpers';
 
-interface CustomRequest extends Request {
+interface CustomRequest {
+    params: { [key: string]: string }; // Adjust the type according to your usage
+    body: string;
     uid?: string;
+    // Add other properties from Express's Request object as needed
 }
 
 interface CustomRequestBody {
     folderName?: string;
 }
 
-interface CustomResponse extends Response {
+interface CustomResponse {
     locals: {
         cleanedPath?: string;
         folderPath?: string;
-    }
+    };
+    status: (status: number) => CustomResponse;
+    json: (body: string) => void;
 }
 
+type NextFunction = () => void;
+
 const Assert = {
-    user: helpers.try(async (req: Request, res: Response, next: NextFunction) => {
+    user: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
         if (!await user.exists(req.params.uid)) {
             return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-user]]'));
         }
@@ -43,7 +49,7 @@ const Assert = {
         next();
     }),
 
-    topic: helpers.try(async (req: Request, res: Response, next: NextFunction) => {
+    topic: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
         if (!await topics.exists(req.params.tid)) {
             return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-topic]]'));
         }
@@ -51,7 +57,7 @@ const Assert = {
         next();
     }),
 
-    post: helpers.try(async (req: Request, res: Response, next: NextFunction) => {
+    post: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
         if (!await posts.exists(req.params.pid)) {
             return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-post]]'));
         }
@@ -72,7 +78,7 @@ const Assert = {
         next();
     }),
 
-    path: helpers.try(async (req: CustomRequest, res: Response, next: NextFunction) => {
+    path: helpers.try(async (req: CustomRequest, res: CustomResponse, next: NextFunction) => {
         const body = req.body as { path?: string };
         const uploadUrl = nconf.get('upload_url') as string;
         const uploadPath = nconf.get('upload_path') as string;
